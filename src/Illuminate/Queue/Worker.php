@@ -1,13 +1,14 @@
 <?php namespace Illuminate\Queue;
 
-use Illuminate\Queue\Jobs\Job;
-use Illuminate\Events\Dispatcher;
+use Illuminate\Contracts\Queue\Job;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Cache\Cache as CacheContract;
 use Illuminate\Queue\Failed\FailedJobProviderInterface;
 
 class Worker {
 
 	/**
-	 * THe queue manager instance.
+	 * The queue manager instance.
 	 *
 	 * @var \Illuminate\Queue\QueueManager
 	 */
@@ -23,9 +24,16 @@ class Worker {
 	/**
 	 * The event dispatcher instance.
 	 *
-	 * @var \Illuminate\Events\Dispatcher
+	 * @var \Illuminate\Contracts\Events\Dispatcher
 	 */
 	protected $events;
+
+	/**
+	 * The cache repository implementation.
+	 *
+	 * @var \Illuminate\Contracts\Cache\Cache
+	 */
+	protected $cache;
 
 	/**
 	 * The exception handler instance.
@@ -39,7 +47,7 @@ class Worker {
 	 *
 	 * @param  \Illuminate\Queue\QueueManager  $manager
 	 * @param  \Illuminate\Queue\Failed\FailedJobProviderInterface  $failer
-	 * @param  \Illuminate\Events\Dispatcher  $events
+	 * @param  \Illuminate\Contracts\Events\Dispatcher  $events
 	 * @return void
 	 */
 	public function __construct(QueueManager $manager,
@@ -64,6 +72,8 @@ class Worker {
 	 */
 	public function daemon($connectionName, $queue = null, $delay = 0, $memory = 128, $sleep = 3, $maxTries = 0)
 	{
+		$lastRestart = $this->getTimestampOfLastQueueRestart();
+
 		while (true)
 		{
 			if ($this->daemonShouldRun())
@@ -77,7 +87,7 @@ class Worker {
 				$this->sleep($sleep);
 			}
 
-			if ($this->memoryExceeded($memory))
+			if ($this->memoryExceeded($memory) || $this->queueShouldRestart($lastRestart))
 			{
 				$this->stop();
 			}
@@ -107,7 +117,7 @@ class Worker {
 	}
 
 	/**
-	 * Deteremine if the daemon should process on this iteration.
+	 * Determine if the daemon should process on this iteration.
 	 *
 	 * @return bool
 	 */
@@ -154,7 +164,7 @@ class Worker {
 	 *
 	 * @param  \Illuminate\Queue\Queue  $connection
 	 * @param  string  $queue
-	 * @return \Illuminate\Queue\Jobs\Job|null
+	 * @return \Illuminate\Contracts\Queue\Job|null
 	 */
 	protected function getNextJob($connection, $queue)
 	{
@@ -170,7 +180,7 @@ class Worker {
 	 * Process a given job from the queue.
 	 *
 	 * @param  string  $connection
-	 * @param  \Illuminate\Queue\Jobs\Job  $job
+	 * @param  \Illuminate\Contracts\Queue\Job  $job
 	 * @param  int  $maxTries
 	 * @param  int  $delay
 	 * @return void
@@ -191,8 +201,6 @@ class Worker {
 			// the delete method on the job. Otherwise we will just keep moving.
 			$job->fire();
 
-			if ($job->autoDelete()) $job->delete();
-
 			return ['job' => $job, 'failed' => false];
 		}
 
@@ -211,7 +219,7 @@ class Worker {
 	 * Log a failed job into storage.
 	 *
 	 * @param  string  $connection
-	 * @param  \Illuminate\Queue\Jobs\Job  $job
+	 * @param  \Illuminate\Contracts\Queue\Job  $job
 	 * @return array
 	 */
 	protected function logFailedJob($connection, Job $job)
@@ -232,7 +240,7 @@ class Worker {
 	 * Raise the failed queue job event.
 	 *
 	 * @param  string  $connection
-	 * @param  \Illuminate\Queue\Jobs\Job  $job
+	 * @param  \Illuminate\Contracts\Queue\Job  $job
 	 * @return void
 	 */
 	protected function raiseFailedJobEvent($connection, Job $job)
@@ -280,6 +288,30 @@ class Worker {
 	}
 
 	/**
+	 * Get the last queue restart timestamp, or null.
+	 *
+	 * @return int|null
+	 */
+	protected function getTimestampOfLastQueueRestart()
+	{
+		if ($this->cache)
+		{
+			return $this->cache->get('illuminate:queue:restart');
+		}
+	}
+
+	/**
+	 * Determine if the queue worker should restart.
+	 *
+	 * @param  int|null  $lastRestart
+	 * @return bool
+	 */
+	protected function queueShouldRestart($lastRestart)
+	{
+		return $this->getTimestampOfLastQueueRestart() != $lastRestart;
+	}
+
+	/**
 	 * Set the exception handler to use in Daemon mode.
 	 *
 	 * @param  \Illuminate\Exception\Handler  $handler
@@ -288,6 +320,17 @@ class Worker {
 	public function setDaemonExceptionHandler($handler)
 	{
 		$this->exceptions = $handler;
+	}
+
+	/**
+	 * Set the cache repository implementation.
+	 *
+	 * @param  \Illuminate\Contracts\Cache\Cache  $cache
+	 * @return void
+	 */
+	public function setCache(CacheContract $cache)
+	{
+		$this->cache = $cache;
 	}
 
 	/**

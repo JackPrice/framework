@@ -4,6 +4,7 @@ use IlluminateQueueClosure;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Queue\Console\WorkCommand;
 use Illuminate\Queue\Console\ListenCommand;
+use Illuminate\Queue\Console\RestartCommand;
 use Illuminate\Queue\Connectors\SqsConnector;
 use Illuminate\Queue\Console\SubscribeCommand;
 use Illuminate\Queue\Connectors\SyncConnector;
@@ -59,6 +60,11 @@ class QueueServiceProvider extends ServiceProvider {
 
 			return $manager;
 		});
+
+		$this->app->bindShared('queue.connection', function($app)
+		{
+			return $app['queue']->connection();
+		});
 	}
 
 	/**
@@ -69,6 +75,8 @@ class QueueServiceProvider extends ServiceProvider {
 	protected function registerWorker()
 	{
 		$this->registerWorkCommand();
+
+		$this->registerRestartCommand();
 
 		$this->app->bindShared('queue.worker', function($app)
 		{
@@ -122,13 +130,28 @@ class QueueServiceProvider extends ServiceProvider {
 	}
 
 	/**
+	 * Register the queue restart console command.
+	 *
+	 * @return void
+	 */
+	public function registerRestartCommand()
+	{
+		$this->app->bindShared('command.queue.restart', function()
+		{
+			return new RestartCommand;
+		});
+
+		$this->commands('command.queue.restart');
+	}
+
+	/**
 	 * Register the push queue subscribe command.
 	 *
 	 * @return void
 	 */
 	protected function registerSubscriber()
 	{
-		$this->app->bindShared('command.queue.subscribe', function($app)
+		$this->app->bindShared('command.queue.subscribe', function()
 		{
 			return new SubscribeCommand;
 		});
@@ -279,7 +302,8 @@ class QueueServiceProvider extends ServiceProvider {
 	{
 		return array(
 			'queue', 'queue.worker', 'queue.listener', 'queue.failer',
-			'command.queue.work', 'command.queue.listen', 'command.queue.subscribe'
+			'command.queue.work', 'command.queue.listen', 'command.queue.restart',
+			'command.queue.subscribe', 'queue.connection',
 		);
 	}
 

@@ -32,6 +32,7 @@ class RoutingRedirectorTest extends PHPUnit_Framework_TestCase {
 		$this->redirect->setSession($this->session);
 	}
 
+
 	public function tearDown()
 	{
 		m::close();
@@ -47,6 +48,7 @@ class RoutingRedirectorTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(302, $response->getStatusCode());
 		$this->assertEquals($this->session, $response->getSession());
 	}
+
 
 	public function testComplexRedirectTo()
 	{
@@ -69,27 +71,28 @@ class RoutingRedirectorTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals('http://foo.com/login', $response->getTargetUrl());
 	}
 
+
 	public function testIntendedRedirectToIntendedUrlInSession()
 	{
-		$this->session->shouldReceive('get')->with('url.intended', '/')->andReturn('http://foo.com/bar');
-		$this->session->shouldReceive('forget')->with('url.intended');
+		$this->session->shouldReceive('pull')->with('url.intended', '/')->andReturn('http://foo.com/bar');
 
 		$response = $this->redirect->intended();
 
 		$this->assertEquals('http://foo.com/bar', $response->getTargetUrl());
 	}
 
+
 	public function testIntendedWithoutIntendedUrlInSession()
 	{
 		$this->session->shouldReceive('forget')->with('url.intended');
 
 		// without fallback url
-		$this->session->shouldReceive('get')->with('url.intended', '/')->andReturn('/');
+		$this->session->shouldReceive('pull')->with('url.intended', '/')->andReturn('/');
 		$response = $this->redirect->intended();
 		$this->assertEquals('http://foo.com/', $response->getTargetUrl());
 
 		// with a fallback url
-		$this->session->shouldReceive('get')->with('url.intended', 'bar')->andReturn('bar');
+		$this->session->shouldReceive('pull')->with('url.intended', 'bar')->andReturn('bar');
 		$response = $this->redirect->intended('bar');
 		$this->assertEquals('http://foo.com/bar', $response->getTargetUrl());
 	}

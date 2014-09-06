@@ -15,6 +15,7 @@ class RoutingControllerInspectorTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(array('verb' => 'get', 'plain' => 'prefix/breeze', 'uri' => 'prefix/breeze/{one?}/{two?}/{three?}/{four?}/{five?}'), $data['getBreeze'][0]);
 	}
 
+
 	public function testMethodsAreCorrectWhenControllerIsNamespaced()
 	{
 		$inspector = new Illuminate\Routing\ControllerInspector;
@@ -31,6 +32,7 @@ class RoutingControllerInspectorTest extends PHPUnit_Framework_TestCase {
 
 class RoutingControllerInspectorBaseStub {
 	public function getBreeze() {}
+	private function patchTest() {}
 }
 
 class RoutingControllerInspectorStub extends RoutingControllerInspectorBaseStub {
@@ -38,4 +40,5 @@ class RoutingControllerInspectorStub extends RoutingControllerInspectorBaseStub 
 	public function getFooBar() {}
 	public function postBaz() {}
 	protected function getBoom() {}
+	private function putTest() {}
 }

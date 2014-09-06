@@ -51,7 +51,7 @@ class ApcStore extends TaggableStore implements StoreInterface {
 	 * @param  string  $key
 	 * @param  mixed   $value
 	 * @param  int     $minutes
-	 * @return array|bool
+	 * @return void
 	 */
 	public function put($key, $value, $minutes)
 	{
@@ -63,7 +63,7 @@ class ApcStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return array|bool
+	 * @return int|bool
 	 */
 	public function increment($key, $value = 1)
 	{
@@ -75,7 +75,7 @@ class ApcStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return array|bool
+	 * @return int|bool
 	 */
 	public function decrement($key, $value = 1)
 	{
@@ -98,11 +98,11 @@ class ApcStore extends TaggableStore implements StoreInterface {
 	 * Remove an item from the cache.
 	 *
 	 * @param  string  $key
-	 * @return array|bool
+	 * @return bool
 	 */
 	public function forget($key)
 	{
-		$this->apc->delete($this->prefix.$key);
+		return $this->apc->delete($this->prefix.$key);
 	}
 
 	/**

@@ -51,6 +51,8 @@ class SessionTableCommand extends Command {
 		$this->files->put($fullPath, $this->files->get(__DIR__.'/stubs/database.stub'));
 
 		$this->info('Migration created successfully!');
+
+		$this->call('dump-autoload');
 	}
 
 	/**
@@ -62,7 +64,7 @@ class SessionTableCommand extends Command {
 	{
 		$name = 'create_session_table';
 
-		$path = $this->laravel['path'].'/database/migrations';
+		$path = $this->laravel['path.database'].'/migrations';
 
 		return $this->laravel['migration.creator']->create($name, $path);
 	}

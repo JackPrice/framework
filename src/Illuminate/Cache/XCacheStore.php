@@ -12,7 +12,7 @@ class XCacheStore extends TaggableStore implements StoreInterface {
 	/**
 	 * Create a new WinCache store.
 	 *
-	 * @param  string     $prefix
+	 * @param  string  $prefix
 	 * @return void
 	 */
 	public function __construct($prefix = '')
@@ -54,7 +54,7 @@ class XCacheStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return void
+	 * @return int
 	 */
 	public function increment($key, $value = 1)
 	{
@@ -66,7 +66,7 @@ class XCacheStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return void
+	 * @return int
 	 */
 	public function decrement($key, $value = 1)
 	{
@@ -89,11 +89,11 @@ class XCacheStore extends TaggableStore implements StoreInterface {
 	 * Remove an item from the cache.
 	 *
 	 * @param  string  $key
-	 * @return void
+	 * @return bool
 	 */
 	public function forget($key)
 	{
-		xcache_unset($this->prefix.$key);
+		return xcache_unset($this->prefix.$key);
 	}
 
 	/**

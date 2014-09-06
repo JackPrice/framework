@@ -14,7 +14,7 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 	public function testInstanceMethod()
 	{
 		$request = Request::create('', 'GET');
-		$this->assertTrue($request === $request->instance());
+		$this->assertSame($request, $request->instance());
 	}
 
 
@@ -51,6 +51,7 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($expected, $request->segment($segment, 'default'));
 	}
 
+
 	public function segmentProvider()
 	{
 		return array(
@@ -73,14 +74,17 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(array('foo', 'bar'), $request->segments());
 	}
 
+
 	public function segmentsProvider()
 	{
 		return array(
 			array('', array()),
 			array('foo/bar', array('foo', 'bar')),
-			array('foo/bar//baz', array('foo', 'bar', 'baz'))
+			array('foo/bar//baz', array('foo', 'bar', 'baz')),
+			array('foo/0/bar', array('foo', '0', 'bar'))
 		);
 	}
+
 
 	public function testUrlMethod()
 	{
@@ -165,6 +169,10 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 		$request = Request::create('/', 'GET', array('name' => 'Taylor', 'age' => 25));
 		$this->assertEquals(array('age' => 25), $request->only('age'));
 		$this->assertEquals(array('name' => 'Taylor', 'age' => 25), $request->only('name', 'age'));
+
+		$request = Request::create('/', 'GET', array('developer' => array('name' => 'Taylor', 'age' => 25)));
+		$this->assertEquals(array('developer' => array('age' => 25)), $request->only('developer.age'));
+		$this->assertEquals(array('developer' => array('name' => 'Taylor'), 'test' => null), $request->only('developer.name', 'test'));
 	}
 
 
@@ -288,6 +296,7 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($payload, $data);
 	}
 
+
 	public function testJSONEmulatingPHPBuiltInServer()
 	{
 		$payload = array('name' => 'taylor');
@@ -304,7 +313,6 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 	}
 
 
-
 	public function testAllInputReturnsInputAndFiles()
 	{
 		$file = $this->getMock('Symfony\Component\HttpFoundation\File\UploadedFile', null, array(__FILE__, 'photo.jpg'));
@@ -318,6 +326,26 @@ class HttpRequestTest extends PHPUnit_Framework_TestCase {
 		$file = $this->getMock('Symfony\Component\HttpFoundation\File\UploadedFile', null, array(__FILE__, 'photo.jpg'));
 		$request = Request::create('/?boom=breeze', 'GET', array('foo' => array('bar' => 'baz')), array(), array('foo' => array('photo' => $file)));
 		$this->assertEquals(array('foo' => array('bar' => 'baz', 'photo' => $file), 'boom' => 'breeze'), $request->all());
+	}
+
+
+	public function testAllInputReturnsInputAfterReplace()
+	{
+		$request = Request::create('/?boom=breeze', 'GET', array('foo' => array('bar' => 'baz')));
+		$request->replace(array('foo' => array('bar' => 'baz'), 'boom' => 'breeze'));
+		$this->assertEquals(array('foo' => array('bar' => 'baz'), 'boom' => 'breeze'), $request->all());
+	}
+
+
+	public function testAllInputWithNumericKeysReturnsInputAfterReplace()
+	{
+		$request1 = Request::create('/', 'POST', array(0 => 'A', 1 => 'B', 2 => 'C'));
+		$request1->replace(array(0 => 'A', 1 => 'B', 2 => 'C'));
+		$this->assertEquals(array(0 => 'A', 1 => 'B', 2 => 'C'), $request1->all());
+
+		$request2 = Request::create('/', 'POST', array(1 => 'A', 2 => 'B', 3 => 'C'));
+		$request2->replace(array(1 => 'A', 2 => 'B', 3 => 'C'));
+		$this->assertEquals(array(1 => 'A', 2 => 'B', 3 => 'C'), $request2->all());
 	}
 
 

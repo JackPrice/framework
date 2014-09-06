@@ -1,12 +1,13 @@
 <?php namespace Illuminate\View;
 
 use Closure;
-use Illuminate\Events\Dispatcher;
 use Illuminate\Container\Container;
 use Illuminate\View\Engines\EngineResolver;
-use Illuminate\Support\Contracts\ArrayableInterface as Arrayable;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\View\Factory as FactoryContract;
+use Illuminate\Contracts\Support\ArrayableInterface as Arrayable;
 
-class Factory {
+class Factory implements FactoryContract {
 
 	/**
 	 * The engine implementation.
@@ -25,7 +26,7 @@ class Factory {
 	/**
 	 * The event dispatcher instance.
 	 *
-	 * @var \Illuminate\Events\Dispatcher
+	 * @var \Illuminate\Contracts\Events\Dispatcher
 	 */
 	protected $events;
 
@@ -42,6 +43,13 @@ class Factory {
 	 * @var array
 	 */
 	protected $shared = array();
+
+	/**
+	 * Array of registered view name aliases.
+	 *
+	 * @var array
+	 */
+	protected $aliases = array();
 
 	/**
 	 * All of the registered view names.
@@ -90,7 +98,7 @@ class Factory {
 	 *
 	 * @param  \Illuminate\View\Engines\EngineResolver  $engines
 	 * @param  \Illuminate\View\ViewFinderInterface  $finder
-	 * @param  \Illuminate\Events\Dispatcher  $events
+	 * @param  \Illuminate\Contracts\Events\Dispatcher  $events
 	 * @return void
 	 */
 	public function __construct(EngineResolver $engines, ViewFinderInterface $finder, Dispatcher $events)
@@ -112,6 +120,8 @@ class Factory {
 	 */
 	public function make($view, $data = array(), $mergeData = array())
 	{
+		if (isset($this->aliases[$view])) $view = $this->aliases[$view];
+
 		$path = $this->finder->find($view);
 
 		$data = array_merge($mergeData, $this->parseData($data));
@@ -135,8 +145,8 @@ class Factory {
 	/**
 	 * Get the evaluated view contents for a named view.
 	 *
-	 * @param string $view
-	 * @param mixed $data
+	 * @param  string  $view
+	 * @param  mixed   $data
 	 * @return \Illuminate\View\View
 	 */
 	public function of($view, $data = array())
@@ -147,13 +157,25 @@ class Factory {
 	/**
 	 * Register a named view.
 	 *
-	 * @param string $view
-	 * @param string $name
+	 * @param  string  $view
+	 * @param  string  $name
 	 * @return void
 	 */
 	public function name($view, $name)
 	{
 		$this->names[$name] = $view;
+	}
+
+	/**
+	 * Add an alias for a view.
+	 *
+	 * @param  string  $view
+	 * @param  string  $alias
+	 * @return void
+	 */
+	public function alias($view, $alias)
+	{
+		$this->aliases[$alias] = $view;
 	}
 
 	/**
@@ -225,10 +247,17 @@ class Factory {
 	 *
 	 * @param  string  $path
 	 * @return \Illuminate\View\Engines\EngineInterface
+	 *
+	 * @throws \InvalidArgumentException
 	 */
-	protected function getEngineFromPath($path)
+	public function getEngineFromPath($path)
 	{
-		$engine = $this->extensions[$this->getExtension($path)];
+		if ( ! $extension = $this->getExtension($path))
+		{
+			throw new \InvalidArgumentException("Unrecognized extension in file: $path");
+		}
+
+		$engine = $this->extensions[$extension];
 
 		return $this->engines->resolve($engine);
 	}
@@ -269,7 +298,7 @@ class Factory {
 	/**
 	 * Register a view creator event.
 	 *
-	 * @param  array|string  $views
+	 * @param  array|string     $views
 	 * @param  \Closure|string  $callback
 	 * @return array
 	 */
@@ -288,7 +317,7 @@ class Factory {
 	/**
 	 * Register multiple view composers via an array.
 	 *
-	 * @param array  $composers
+	 * @param  array  $composers
 	 * @return array
 	 */
 	public function composers(array $composers)
@@ -308,6 +337,7 @@ class Factory {
 	 *
 	 * @param  array|string  $views
 	 * @param  \Closure|string  $callback
+	 * @param  int|null  $priority
 	 * @return array
 	 */
 	public function composer($views, $callback, $priority = null)
@@ -326,9 +356,10 @@ class Factory {
 	 * Add an event for a given view.
 	 *
 	 * @param  string  $view
-	 * @param  Closure|string  $callback
+	 * @param  \Closure|string  $callback
 	 * @param  string  $prefix
-	 * @return Closure
+	 * @param  int|null  $priority
+	 * @return \Closure
 	 */
 	protected function addViewEvent($view, $callback, $prefix = 'composing: ', $priority = null)
 	{
@@ -347,9 +378,10 @@ class Factory {
 	/**
 	 * Register a class based view composer.
 	 *
-	 * @param  string   $view
-	 * @param  string   $class
-	 * @param  string   $prefix
+	 * @param  string    $view
+	 * @param  string    $class
+	 * @param  string    $prefix
+	 * @param  int|null  $priority
 	 * @return \Closure
 	 */
 	protected function addClassEvent($view, $class, $prefix, $priority = null)
@@ -369,9 +401,10 @@ class Factory {
 	/**
 	 * Add a listener to the event dispatcher.
 	 *
-	 * @param string   $name
-	 * @param \Closure $callback
-	 * @param integer  $priority
+	 * @param  string   $name
+	 * @param  \Closure $callback
+	 * @param  integer  $priority
+	 * @return void
 	 */
 	protected function addEventListener($name, $callback, $priority = null)
 	{
@@ -463,7 +496,10 @@ class Factory {
 	{
 		if ($content === '')
 		{
-			ob_start() && $this->sectionStack[] = $section;
+			if (ob_start())
+			{
+				$this->sectionStack[] = $section;
+			}
 		}
 		else
 		{
@@ -548,13 +584,9 @@ class Factory {
 		if (isset($this->sections[$section]))
 		{
 			$content = str_replace('@parent', $content, $this->sections[$section]);
+		}
 
-			$this->sections[$section] = $content;
-		}
-		else
-		{
-			$this->sections[$section] = $content;
-		}
+		$this->sections[$section] = $content;
 	}
 
 	/**
@@ -566,7 +598,14 @@ class Factory {
 	 */
 	public function yieldContent($section, $default = '')
 	{
-		return isset($this->sections[$section]) ? $this->sections[$section] : $default;
+		$sectionContent = $default;
+
+		if (isset($this->sections[$section]))
+		{
+			$sectionContent = $this->sections[$section];
+		}
+
+		return str_replace('@parent', '', $sectionContent);
 	}
 
 	/**
@@ -659,9 +698,9 @@ class Factory {
 	/**
 	 * Register a valid view extension and its engine.
 	 *
-	 * @param  string   $extension
-	 * @param  string   $engine
-	 * @param  Closure  $resolver
+	 * @param  string    $extension
+	 * @param  string    $engine
+	 * @param  \Closure  $resolver
 	 * @return void
 	 */
 	public function addExtension($extension, $engine, $resolver = null)
@@ -711,6 +750,7 @@ class Factory {
 	/**
 	 * Set the view finder instance.
 	 *
+	 * @param  \Illuminate\View\ViewFinderInterface  $finder
 	 * @return void
 	 */
 	public function setFinder(ViewFinderInterface $finder)
@@ -721,7 +761,7 @@ class Factory {
 	/**
 	 * Get the event dispatcher instance.
 	 *
-	 * @return \Illuminate\Events\Dispatcher
+	 * @return \Illuminate\Contracts\Events\Dispatcher
 	 */
 	public function getDispatcher()
 	{
@@ -731,7 +771,7 @@ class Factory {
 	/**
 	 * Set the event dispatcher instance.
 	 *
-	 * @param  \Illuminate\Events\Dispatcher
+	 * @param  \Illuminate\Contracts\Events\Dispatcher
 	 * @return void
 	 */
 	public function setDispatcher(Dispatcher $events)

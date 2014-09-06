@@ -27,25 +27,33 @@ class LogWriterTest extends PHPUnit_Framework_TestCase {
 	}
 
 
-	public function testMagicMethodsPassErrorAdditionsToMonolog()
+	public function testErrorLogHandlerCanBeAdded()
 	{
 		$writer = new Writer($monolog = m::mock('Monolog\Logger'));
-		$monolog->shouldReceive('addError')->once()->with('foo')->andReturn('bar');
+		$monolog->shouldReceive('pushHandler')->once()->with(m::type('Monolog\Handler\ErrorLogHandler'));
+		$writer->useErrorLog();
+	}
 
-		$this->assertEquals('bar', $writer->error('foo'));
+
+	public function testMethodsPassErrorAdditionsToMonolog()
+	{
+		$writer = new Writer($monolog = m::mock('Monolog\Logger'));
+		$monolog->shouldReceive('error')->once()->with('foo', []);
+
+		$writer->error('foo');
 	}
 
 
 	public function testWriterFiresEventsDispatcher()
 	{
 		$writer = new Writer($monolog = m::mock('Monolog\Logger'), $events = new Illuminate\Events\Dispatcher);
-		$monolog->shouldReceive('addError')->once()->with('foo');
+		$monolog->shouldReceive('error')->once()->with('foo', array());
 
 		$events->listen('illuminate.log', function($level, $message, array $context = array())
 		{
-			$_SERVER['__log.level']      = $level;
+			$_SERVER['__log.level']   = $level;
 			$_SERVER['__log.message'] = $message;
-			$_SERVER['__log.context']    = $context;
+			$_SERVER['__log.context'] = $context;
 		});
 
 		$writer->error('foo');
@@ -73,7 +81,7 @@ class LogWriterTest extends PHPUnit_Framework_TestCase {
 
 	public function testListenShortcut()
 	{
-		$writer = new Writer($monolog = m::mock('Monolog\Logger'), $events = m::mock('Illuminate\Events\Dispatcher'));
+		$writer = new Writer($monolog = m::mock('Monolog\Logger'), $events = m::mock('Illuminate\Contracts\Events\Dispatcher'));
 
 		$callback = function() { return 'success'; };
 		$events->shouldReceive('listen')->with('illuminate.log', $callback)->once();

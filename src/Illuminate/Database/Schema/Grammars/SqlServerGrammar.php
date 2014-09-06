@@ -6,13 +6,6 @@ use Illuminate\Database\Schema\Blueprint;
 class SqlServerGrammar extends Grammar {
 
 	/**
-	 * The keyword identifier wrapper format.
-	 *
-	 * @var string
-	 */
-	protected $wrapper = '"%s"';
-
-	/**
 	 * The possible column modifiers.
 	 *
 	 * @var array
@@ -237,7 +230,6 @@ class SqlServerGrammar extends Grammar {
 	{
 		return "nchar({$column->length})";
 	}
-
 
 	/**
 	 * Create the column definition for a string type.

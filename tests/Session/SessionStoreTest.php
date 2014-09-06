@@ -140,7 +140,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session->ageFlashData();
 
 		$this->assertFalse($session->has('foo'));
-		$this->assertEquals(null, $session->get('foo'));
+		$this->assertNull($session->get('foo'));
 	}
 
 
@@ -176,7 +176,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 		$session = $this->getSession();
 		$session->set('foo', 'bar');
 		$session->set('qu', 'ux');
-		$session->replace(array('foo'=>'baz'));
+		$session->replace(array('foo' => 'baz'));
 		$this->assertTrue($session->get('foo') == 'baz');
 		$this->assertTrue($session->get('qu') == 'ux');
 	}
@@ -279,6 +279,7 @@ class SessionStoreTest extends PHPUnit_Framework_TestCase {
 			'1'
 		);
 	}
+
 
 	public function getSessionName()
 	{

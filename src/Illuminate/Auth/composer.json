@@ -9,10 +9,7 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "illuminate/cookie": "4.3.*",
-        "illuminate/encryption": "4.3.*",
-        "illuminate/events": "4.3.*",
-        "illuminate/hashing": "4.3.*",
+        "illuminate/contracts": "4.3.*",
         "illuminate/http": "4.3.*",
         "illuminate/session": "4.3.*",
         "illuminate/support": "4.3.*",
@@ -20,13 +17,13 @@
     },
     "require-dev": {
         "illuminate/console": "4.3.*",
-        "illuminate/routing": "4.3.*",
-        "phpunit/phpunit": "4.0.*"
+        "illuminate/routing": "4.3.*"
     },
     "autoload": {
-        "psr-0": {"Illuminate\\Auth": ""}
+        "psr-4": {
+            "Illuminate\\Auth\\": ""
+        }
     },
-    "target-dir": "Illuminate/Auth",
     "extra": {
         "branch-alias": {
             "dev-master": "4.3-dev"

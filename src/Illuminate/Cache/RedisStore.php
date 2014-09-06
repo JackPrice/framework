@@ -74,7 +74,7 @@ class RedisStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return void
+	 * @return int
 	 */
 	public function increment($key, $value = 1)
 	{
@@ -86,7 +86,7 @@ class RedisStore extends TaggableStore implements StoreInterface {
 	 *
 	 * @param  string  $key
 	 * @param  mixed   $value
-	 * @return void
+	 * @return int
 	 */
 	public function decrement($key, $value = 1)
 	{
@@ -111,11 +111,11 @@ class RedisStore extends TaggableStore implements StoreInterface {
 	 * Remove an item from the cache.
 	 *
 	 * @param  string  $key
-	 * @return void
+	 * @return bool
 	 */
 	public function forget($key)
 	{
-		$this->connection()->del($this->prefix.$key);
+		return (bool) $this->connection()->del($this->prefix.$key);
 	}
 
 	/**
@@ -131,7 +131,7 @@ class RedisStore extends TaggableStore implements StoreInterface {
 	/**
 	 * Begin executing a new tags operation.
 	 *
-	 * @param  array|dynamic  $names
+	 * @param  array|mixed  $names
 	 * @return \Illuminate\Cache\RedisTaggedCache
 	 */
 	public function tags($names)
@@ -142,7 +142,7 @@ class RedisStore extends TaggableStore implements StoreInterface {
 	/**
 	 * Get the Redis connection instance.
 	 *
-	 * @return \Predis\Connection\SingleConnectionInterface
+	 * @return \Predis\ClientInterface
 	 */
 	public function connection()
 	{

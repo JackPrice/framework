@@ -121,16 +121,6 @@ abstract class Job {
 	}
 
 	/**
-	 * Determine if job should be auto-deleted.
-	 *
-	 * @return bool
-	 */
-	public function autoDelete()
-	{
-		return isset($this->instance->delete);
-	}
-
-	/**
 	 * Calculate the number of seconds with the given delay.
 	 *
 	 * @param  \DateTime|int  $delay
@@ -144,7 +134,7 @@ abstract class Job {
 		}
 		else
 		{
-			return intval($delay);
+			return (int) $delay;
 		}
 	}
 

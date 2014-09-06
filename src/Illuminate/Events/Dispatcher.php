@@ -1,8 +1,9 @@
 <?php namespace Illuminate\Events;
 
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
 
-class Dispatcher {
+class Dispatcher implements DispatcherContract {
 
 	/**
 	 * The IoC container instance.
@@ -53,7 +54,7 @@ class Dispatcher {
 	/**
 	 * Register an event listener with the dispatcher.
 	 *
-	 * @param  string|array  $event
+	 * @param  string|array  $events
 	 * @param  mixed   $listener
 	 * @param  int     $priority
 	 * @return void
@@ -64,12 +65,14 @@ class Dispatcher {
 		{
 			if (str_contains($event, '*'))
 			{
-				return $this->setupWildcardListen($event, $listener);
+				$this->setupWildcardListen($event, $listener);
 			}
+			else
+			{
+				$this->listeners[$event][$priority][] = $this->makeListener($listener);
 
-			$this->listeners[$event][$priority][] = $this->makeListener($listener);
-
-			unset($this->sorted[$event]);
+				unset($this->sorted[$event]);
+			}
 		}
 	}
 

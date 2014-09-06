@@ -31,6 +31,17 @@ class CacheTaggedCacheTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+	public function testCacheCanBeSetWithDatetimeArgument()
+	{
+		$store = new ArrayStore;
+		$tags = array('bop', 'zap');
+		$duration = new DateTime();
+		$duration->add(new DateInterval("PT10M"));
+		$store->tags($tags)->put('foo', 'bar', $duration);
+		$this->assertEquals('bar', $store->tags($tags)->get('foo'));
+	}
+
+
 	public function testCacheSavedWithMultipleTagsCanBeFlushed()
 	{
 		$store = new ArrayStore;
@@ -71,7 +82,7 @@ class CacheTaggedCacheTest extends PHPUnit_Framework_TestCase {
 		$store->shouldReceive('connection')->andReturn($conn = m::mock('StdClass'));
 		$conn->shouldReceive('lpush')->once()->with('prefix:foo:forever', 'prefix:'.sha1('foo|bar').':key1');
 		$conn->shouldReceive('lpush')->once()->with('prefix:bar:forever', 'prefix:'.sha1('foo|bar').':key1');
-		$store->shouldReceive('forever')->with('prefix:'.sha1('foo|bar').':key1', 'key1:value');
+		$store->shouldReceive('forever')->with(sha1('foo|bar').':key1', 'key1:value');
 
 		$redis->forever('key1', 'key1:value');
 	}
